@@ -1,5 +1,7 @@
+use crate::websocket_error::WsError;
 use base64::prelude::*;
 use sha1::{Digest, Sha1};
+use std::error;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
@@ -8,9 +10,9 @@ pub struct WebSocketServer {
 }
 
 impl WebSocketServer {
-    pub fn new(mut socket: TcpStream) -> std::io::Result<Self> {
+    pub fn new(mut socket: TcpStream) -> Result<Self, Box<dyn error::Error>> {
         let client_request = read_http_request(&mut socket);
-        let key = extract_client_key(client_request);
+        let key = extract_client_key(&client_request)?;
         let response = build_response(key);
         socket.write_all(response.as_bytes())?;
         Ok(Self { socket })
@@ -44,19 +46,17 @@ fn read_http_request(socket: &mut TcpStream) -> String {
     retval
 }
 
-fn extract_client_key(client_request: String) -> String {
-    for line in client_request.lines() {
+fn extract_client_key(response: &str) -> Result<String, Box<dyn error::Error>> {
+    for line in response.lines() {
         if line.contains("Sec-WebSocket-Key") {
-            let mut splits = line.split(":");
-            splits.next().expect("Error: header wrong format");
-            return splits
-                .next()
-                .expect("Error: no value for websocket key")
-                .trim()
-                .to_string();
+            if let Some((_, value)) = line.split_once(":") {
+                return Ok(value.trim().to_string());
+            } else {
+                return Err(Box::new(WsError::Header(line.to_string())));
+            }
         }
     }
-    panic!("Error: not a valid websocket upgrade request")
+    Err(Box::new(WsError::MissingSecWebSocketAcceptHeader))
 }
 
 fn build_response(key: String) -> String {

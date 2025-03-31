@@ -49,7 +49,7 @@ Host: 127.0.0.1:8000\r\n\r\n
 
 fn check_server_response(socket: &mut TcpStream, key: String) -> Result<(), Box<dyn error::Error>> {
     let response = read_server_http_response(socket)?;
-    let client_key = extract_client_key(&response)?;
+    let client_key = extract_server_key(&response)?;
     let control_key = get_control_key(&key);
     if client_key == control_key {
         Ok(())
@@ -73,7 +73,7 @@ fn read_server_http_response(socket: &mut TcpStream) -> std::io::Result<String> 
     }
 }
 
-fn extract_client_key(response: &str) -> Result<String, Box<dyn error::Error>> {
+fn extract_server_key(response: &str) -> Result<String, Box<dyn error::Error>> {
     for line in response.lines() {
         if line.contains("Sec-WebSocket-Accept") {
             if let Some((_, value)) = line.split_once(":") {
