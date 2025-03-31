@@ -12,6 +12,7 @@ pub struct WebSocketServer {
 
 impl WebSocketServer {
     pub fn new(mut socket: TcpStream) -> Result<Self, Box<dyn error::Error>> {
+        socket.set_read_timeout(None)?;
         let client_request = read_http_request(&mut socket);
         let key = extract_client_key(&client_request)?;
         let response = build_response(key);
@@ -20,8 +21,8 @@ impl WebSocketServer {
         Ok(Self { frame_handler })
     }
 
-    pub fn try_read_frame(&mut self) -> Option<String> {
-        Some("Hey".to_string())
+    pub fn try_read_frame(&mut self) -> Result<Option<String>, Box<dyn error::Error>> {
+        self.frame_handler.get_next_frame()
     }
 
     pub fn send_frame(&mut self, payload: String) {

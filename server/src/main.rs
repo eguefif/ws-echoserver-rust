@@ -24,8 +24,13 @@ fn run_server(ip: &str, port: u32) -> std::io::Result<()> {
 fn handle_client(socket: TcpStream) {
     let mut websocket = WebSocketServer::new(socket).unwrap();
     loop {
-        let payload = websocket.try_read_frame().unwrap();
-        websocket.send_frame(payload);
-        break;
+        match websocket.try_read_frame() {
+            Ok(payload) => {
+                if let Some(payload) = payload {
+                    websocket.send_frame(payload);
+                }
+            }
+            Err(e) => eprintln!("Error: {e}"),
+        }
     }
 }
