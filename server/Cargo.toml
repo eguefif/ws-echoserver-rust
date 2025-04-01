@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 base64 = "0.22.1"
 sha1 = "0.10.6"
+websocket_rs = { path="../websocket_rs/" }
