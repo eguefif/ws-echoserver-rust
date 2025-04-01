@@ -24,8 +24,9 @@ fn run_server(ip: &str, port: u32) -> std::io::Result<()> {
 fn handle_client(socket: TcpStream) {
     let mut ws_server = WebSocketServer::new(socket).unwrap();
     loop {
-        if let Ok(payload) = ws_server.try_read_frame() {
-            ws_server.send_frame(payload);
+        let payload = ws_server.try_read_frame().unwrap();
+        if payload.len() > 0 {
+            ws_server.send_frame(payload).unwrap();
         }
     }
 }

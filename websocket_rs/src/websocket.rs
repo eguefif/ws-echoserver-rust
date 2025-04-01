@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::net::TcpStream;
 
 pub struct WebSocket {
@@ -13,15 +13,52 @@ impl WebSocket {
 
     pub fn read_frame(&mut self) -> Result<String, Box<dyn Error>> {
         let mut buffer = [0u8; 10_000];
-        let n = self.socket.read(&mut buffer)?;
+        let _ = self.socket.read(&mut buffer)?;
 
-        if n > 6 {
-            let payload = get_payload(&buffer);
-            Ok(payload)
-        } else {
-            Ok("".to_string())
-        }
+        let payload = get_payload(&buffer);
+        Ok(payload)
     }
+    pub fn write_frame(&mut self, payload: String) -> Result<(), Box<dyn Error>> {
+        let payload_bytes = payload.as_bytes();
+        let mut frame: Vec<u8> = Vec::new();
+
+        encode_fin(&mut frame);
+        encode_opcode(&mut frame);
+        encode_length(&payload_bytes, &mut frame);
+        add_payload(&mut frame, &payload_bytes);
+
+        self.socket.write_all(&frame)?;
+        Ok(())
+    }
+}
+
+fn encode_fin(frame: &mut Vec<u8>) {
+    frame.push(0b1000_0000);
+}
+fn encode_opcode(frame: &mut Vec<u8>) {
+    let first_byte = frame.pop().unwrap();
+    frame.push(0b1000_0001 | first_byte);
+}
+
+fn encode_length(payload_bytes: &[u8], frame: &mut Vec<u8>) {
+    let payload_len = payload_bytes.len();
+    println!("len: {payload_len}");
+
+    if payload_len < 126 {
+        frame.push(payload_len as u8);
+    } else if payload_len <= 65_535 {
+        frame.push(126);
+        frame.extend_from_slice(&(payload_len as u16).to_be_bytes());
+    } else {
+        frame.push(127);
+        frame.push(0);
+        frame.push(0);
+        frame.extend_from_slice(&(payload_len as u64).to_be_bytes());
+    }
+}
+
+fn add_payload(frame: &mut Vec<u8>, payload_bytes: &[u8]) {
+    frame.extend_from_slice(payload_bytes);
 }
 
 fn get_payload(buffer: &[u8]) -> String {
@@ -29,6 +66,20 @@ fn get_payload(buffer: &[u8]) -> String {
     let mask = get_mask(&buffer);
     let payload = extract_payload(&buffer, len);
     unmask_payload(payload, mask)
+}
+
+#[derive(PartialEq, Debug)]
+enum Opcode {
+    Text,
+    Unsupported,
+}
+
+fn get_opcode(buffer: &[u8]) -> Opcode {
+    let opcode_byte = buffer[0] & 0b0111_1111;
+    match opcode_byte {
+        1 => Opcode::Text,
+        _ => Opcode::Unsupported,
+    }
 }
 
 fn get_len(buffer: &[u8]) -> usize {

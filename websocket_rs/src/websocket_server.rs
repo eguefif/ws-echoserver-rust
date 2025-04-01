@@ -25,8 +25,8 @@ impl WebSocketServer {
         self.websocket.read_frame()
     }
 
-    pub fn send_frame(&mut self, payload: String) {
-        println!("Sending: {payload}");
+    pub fn send_frame(&mut self, payload: String) -> Result<(), Box<dyn error::Error>> {
+        self.websocket.write_frame(payload)
     }
 }
 
@@ -68,8 +68,8 @@ fn build_response(key: String) -> String {
         "HTTP/1.1 101 Switching Protocols\r\n\
 Upgrade: websocket\r\n\
 Connection: Upgrade\r\n\
-Sec-WebSocket-Accept: {}\r\n\r\n
-",
+Sec-WebSocket-Accept: {}\r\n\r\n\
+            ",
         server_key
     )
 }
