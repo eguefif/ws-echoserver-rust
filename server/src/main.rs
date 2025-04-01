@@ -1,8 +1,6 @@
-use crate::websocket::WebSocket;
 use std::net::{TcpListener, TcpStream};
 use std::thread;
-
-mod websocket;
+use websocket_rs::websocket_server::WebSocketServer;
 
 fn main() -> std::io::Result<()> {
     run_server("127.0.0.1", 8000)?;
@@ -24,10 +22,10 @@ fn run_server(ip: &str, port: u32) -> std::io::Result<()> {
 }
 
 fn handle_client(socket: TcpStream) {
-    let mut websocket = WebSocket::new(socket);
+    let mut ws_server = WebSocketServer::new(socket).unwrap();
     loop {
-        let payload = websocket.try_read_frame().unwrap();
-        websocket.send_frame(payload);
-        break;
+        if let Ok(payload) = ws_server.try_read_frame() {
+            ws_server.send_frame(payload);
+        }
     }
 }

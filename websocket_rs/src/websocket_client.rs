@@ -1,3 +1,4 @@
+use crate::websocket::WebSocket;
 use crate::websocket_error::WsError;
 use crate::websocket_server::process_key;
 use base64::prelude::*;
@@ -7,7 +8,7 @@ use std::io::{Read, Write};
 use std::net::TcpStream;
 
 pub struct WebSocketClient {
-    socket: TcpStream,
+    websocket: WebSocket,
 }
 
 impl WebSocketClient {
@@ -17,7 +18,9 @@ impl WebSocketClient {
         let request = build_request(&key);
         socket.write_all(request.as_bytes())?;
         check_server_response(&mut socket, key)?;
-        Ok(Self { socket })
+        Ok(Self {
+            websocket: WebSocket::new(socket),
+        })
     }
 
     pub fn send_frame(&mut self, payload: &str) {
