@@ -42,7 +42,7 @@ Sec-WebSocket-Version: 13\r\n\
 Sec-WebSocket-Key: {key}\r\n\
 Connection: Upgrade\r\n\
 Upgrade: websocket\r\n\
-Host: 127.0.0.1:8000\r\n\r\n
+Host: 127.0.0.1:9000\r\n\r\n
     "
     )
 }
@@ -77,6 +77,7 @@ fn read_server_http_response(socket: &mut TcpStream) -> Option<String> {
 
 fn extract_client_key(response: &str) -> String {
     for line in response.lines() {
+        println!("line: {}", line);
         if line.contains("Sec-WebSocket-Accept") {
             let mut splits = line.split(":");
             splits.next().expect("Error: header wrong format");

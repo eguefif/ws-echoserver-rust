@@ -3,7 +3,7 @@ use std::thread;
 use websocket_rs::websocket_server::WebSocketServer;
 
 fn main() -> std::io::Result<()> {
-    run_server("127.0.0.1", 8000)?;
+    run_server("127.0.0.1", 9000)?;
     Ok(())
 }
 

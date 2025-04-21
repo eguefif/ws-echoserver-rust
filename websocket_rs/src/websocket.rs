@@ -62,7 +62,7 @@ fn add_payload(frame: &mut Vec<u8>, payload_bytes: &[u8]) {
 }
 
 fn get_payload(buffer: &[u8]) -> String {
-    let len = get_len(&buffer);
+    let len = get_payload_len(&buffer);
     let mask = get_mask(&buffer);
     let payload = extract_payload(&buffer, len);
     unmask_payload(payload, mask)
@@ -82,7 +82,7 @@ fn get_opcode(buffer: &[u8]) -> Opcode {
     }
 }
 
-fn get_len(buffer: &[u8]) -> usize {
+fn get_payload_len(buffer: &[u8]) -> usize {
     // We mask the first byte as it is not part of the length
     let size_byte = 0b01111111 & buffer[1];
     match size_byte {
@@ -135,7 +135,7 @@ mod test {
     fn it_parse_basic_len_correctly() {
         // This frame carry: Hello
         let buffer = [129, 133, 166, 51, 46, 40, 238, 86, 66, 68, 201];
-        let len = get_len(&buffer);
+        let len = get_payload_len(&buffer);
         assert_eq!(len, 5)
     }
 
@@ -154,7 +154,7 @@ mod test {
             137, 213, 255, 210, 202, 210, 247, 213, 133, 205, 227, 196, 202, 204, 247, 202,
         ];
 
-        let len = get_len(&buffer);
+        let len = get_payload_len(&buffer);
         assert_eq!(len, 128)
     }
 
@@ -163,7 +163,7 @@ mod test {
         // The following string is the payload. Length = 35000 sent by postman.
         let buffer = [129, 254, 136, 184, 10, 8, 221, 131, 70, 103, 175, 230];
         let expected = 0b10001000_00000000 + 0b10111000;
-        let len = get_len(&buffer);
+        let len = get_payload_len(&buffer);
         assert_eq!(len, expected);
         assert_eq!(len, 35000);
     }
@@ -172,7 +172,7 @@ mod test {
     fn it_parse_basic_len_correctly_big_size() {
         let buffer = [129, 255, 0, 0, 0, 0, 0, 1, 136, 184, 175, 230];
         let expected = 0b1_00000000_00000000 + 0b10001000_00000000 + 0b10111000;
-        let len = get_len(&buffer);
+        let len = get_payload_len(&buffer);
         assert_eq!(len, expected);
     }
 
